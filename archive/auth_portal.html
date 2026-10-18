@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supabase Auth & Lung Cancer AI Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-light: #e0f2fe;
+      --bg-gradient: linear-gradient(135deg, #0b132b 0%, #1c2541 50%, #0c4a6e 100%);
+      --card-bg: rgba(255, 255, 255, 0.98);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #b91c1c;
+      --success-bg: #f0fdf4;
+      --success-border: #bbf7d0;
+      --success-text: #15803d;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-glow: 0 20px 40px -15px rgba(2, 132, 199, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-wrapper {
+      width: 100%;
+      max-width: 480px;
+      transition: max-width 0.3s ease;
+    }
+
+    .auth-wrapper.wide {
+      max-width: 880px;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), var(--shadow-glow);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-light);
+      color: var(--primary-hover);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .header-title {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 0.925rem;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .tab-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .alert {
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.45;
+    }
+
+    .alert-error {
+      background-color: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+    }
+
+    .alert-success {
+      background-color: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .input-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-color);
+      background-color: #f8fafc;
+      color: #0f172a;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .btn-toggle-pwd {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      padding: 12px 18px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .card-footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .link-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      margin-left: 4px;
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Dashboard UI */
+    #dashboard-view { display: none; }
+    .portal-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .user-profile-badge { display: flex; align-items: center; gap: 12px; }
+    .user-avatar-sm {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      font-weight: 800; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #bae6fd;
+    }
+    .btn-logout {
+      background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+      padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+    }
+    .diagnostic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    @media (max-width: 768px) { .diagnostic-grid { grid-template-columns: 1fr; } }
+    .dropzone-container {
+      border: 2px dashed #cbd5e1; background: #f8fafc;
+      border-radius: var(--radius-md); padding: 28px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s ease;
+    }
+    .dropzone-container:hover { border-color: var(--primary); background: #f0f9ff; }
+    .preview-wrapper {
+      position: relative; margin-top: 16px; border-radius: var(--radius-md);
+      overflow: hidden; border: 1px solid #e2e8f0; background: #000;
+      max-height: 280px; display: flex; align-items: center; justify-content: center;
+    }
+    .preview-img { max-width: 100%; max-height: 280px; object-fit: contain; }
+    .result-card {
+      background: #ffffff; border-radius: var(--radius-md);
+      border: 1px solid #e2e8f0; padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .diagnosis-badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px;
+      border-radius: 9999px; font-size: 1.05rem; font-weight: 800; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .badge-cancer { background-color: #fee2e2; color: #b91c1c; border: 1.5px solid #f87171; box-shadow: 0 0 15px rgba(220, 38, 38, 0.2); }
+    .badge-normal { background-color: #dcfce7; color: #15803d; border: 1.5px solid #4ade80; box-shadow: 0 0 15px rgba(22, 163, 74, 0.2); }
+    .confidence-bar-bg { width: 100%; height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin: 10px 0 16px 0; }
+    .confidence-bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease; }
+    .fill-cancer { background: linear-gradient(90deg, #f87171, #dc2626); }
+    .fill-normal { background: linear-gradient(90deg, #4ade80, #16a34a); }
+    .clinical-notes-box {
+      background: #f8fafc; border-left: 4px solid var(--primary);
+      padding: 12px 14px; border-radius: 0 8px 8px 0; font-size: 0.85rem; color: #334155; line-height: 1.5; margin: 14px 0;
+    }
+    .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; font-size: 0.85rem; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper" id="main-container">
+    <div class="auth-card">
+
+      <!-- Alerts -->
+      <div id="error-alert" class="alert alert-error">
+        <div>⚠️ <span id="error-text"></span></div>
+      </div>
+      <div id="success-alert" class="alert alert-success">
+        <div>✅ <span id="success-text"></span></div>
+      </div>
+
+      <!-- AUTH VIEWS -->
+      <div id="auth-forms">
+        <div style="text-align: center;">
+          <div class="brand-badge">🫁 Lung AI Diagnostic System</div>
+          <h1 id="title" class="header-title">Welcome Back</h1>
+          <p id="subtitle" class="header-subtitle">Sign in to access patient records & chest X-ray predictions</p>
+        </div>
+
+        <div class="tab-container">
+          <button type="button" id="tab-login" class="tab-btn active" onclick="switchTab('login')">Sign In</button>
+          <button type="button" id="tab-register" class="tab-btn" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input id="login-email" type="email" class="form-input" placeholder="doctor@hospital.org" required autocomplete="email" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <div class="input-container">
+              <input id="login-password" type="password" class="form-input" placeholder="••••••••••••" required autocomplete="current-password" />
+              <button type="button" class="btn-toggle-pwd" onclick="togglePassword('login-password')">Show</button>
+            </div>
+          </div>
+
+          <button type="submit" id="login-submit" class="btn-submit">
+            <span>Sign In</span>
+          </button>
+
+          <div class="card-footer">
+            Don't have an account yet?
+            <button type="button" class="link-btn" onclick="switchTab('register')">Register here</button>
+          </div>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label class="form-label" for="reg-name">Full Name</label>
+            <input id="reg-name" type="text" class="form-input" placeholder="Dr. Alex Rivera" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-email">Email Address</label>
+            <input id="reg-email" type="email" class="form-input" placeholder="doctor@hospital.org" required autocomplete="email" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-password">Password (min. 6 characters)</label>
+            <div class="input-container">
+              <input id="reg-password" type="password" class="form-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password" />
+              <button type="button" class="btn-toggle-pwd" onclick="togglePassword('reg-password')">Show</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reg-confirm">Confirm Password</label>
+            <input id="reg-confirm" type="password" class="form-input" placeholder="••••••••••••" minlength="6" required autocomplete="new-password" />
+          </div>
+
+          <button type="submit" id="register-submit" class="btn-submit">
+            <span>Create Account</span>
+          </button>
+
+          <div class="card-footer">
+            Already have an account?
+            <button type="button" class="link-btn" onclick="switchTab('login')">Sign in instead</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- DIAGNOSTIC DASHBOARD VIEW -->
+      <div id="dashboard-view">
+        <div class="portal-topbar">
+          <div class="user-profile-badge">
+            <div class="user-avatar-sm" id="dash-avatar">U</div>
+            <div>
+              <div style="font-weight: 700; color: #0f172a;" id="dash-name">Medical Specialist</div>
+              <div style="font-size: 0.8rem; color: #64748b;" id="dash-email">doctor@hospital.org</div>
+            </div>
+          </div>
+          <button type="button" class="btn-logout" onclick="handleLogout()">Sign Out</button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <div class="brand-badge">🔬 Deep Learning Diagnostic Workstation</div>
+          <h2 class="header-title" style="font-size: 1.5rem;">Lung Cancer Chest X-Ray Detector</h2>
+          <p class="header-subtitle" style="margin-bottom: 16px;">
+            Upload a chest radiograph to detect pulmonary cancer/malignancies in real time.
+          </p>
+        </div>
+
+        <div class="diagnostic-grid">
+          <!-- Upload Box -->
+          <div>
+            <div class="form-group">
+              <label class="form-label">Patient Name or ID (Optional)</label>
+              <input type="text" id="patient-name-input" class="form-input" placeholder="e.g. PT-8910 / Jane Doe" />
+            </div>
+
+            <label class="form-label">Chest X-Ray Image</label>
+            <div class="dropzone-container" onclick="document.getElementById('xray-file').click()">
+              <input type="file" id="xray-file" accept="image/*" style="display: none;" onchange="handleFileSelect(event)" />
+              <div style="font-size: 2.5rem; margin-bottom: 8px;">📁</div>
+              <div id="file-name-display" style="font-weight: 700; color: #0284c7; margin-bottom: 4px;">Click to Select Chest X-Ray</div>
+              <div style="font-size: 0.8rem; color: #64748b;">Supports JPEG, PNG</div>
+            </div>
+
+            <div id="preview-box" class="preview-wrapper hidden">
+              <img id="preview-image" class="preview-img" alt="X-Ray Preview" />
+            </div>
+
+            <button type="button" id="btn-analyze" class="btn-submit" onclick="runAnalysis()" style="margin-top: 14px;" disabled>
+              <span>Run AI Cancer Detection</span>
+            </button>
+          </div>
+
+          <!-- Result Findings -->
+          <div class="result-card">
+            <div id="result-content" class="hidden">
+              <div style="text-align: center; margin-bottom: 16px;">
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 600; display: block; margin-bottom: 6px;">AI INFERENCE RESULT</span>
+                <div id="res-badge" class="diagnosis-badge badge-cancer">
+                  <span id="res-badge-icon">🚨</span>
+                  <span id="res-badge-text">CANCER DETECTED</span>
+                </div>
+                <div style="font-size: 1.8rem; font-weight: 800; color: #0f172a;">
+                  <span id="res-confidence">99.5</span>%
+                  <span style="font-size: 0.9rem; color: #64748b; font-weight: 500;">Confidence</span>
+                </div>
+                <div class="confidence-bar-bg">
+                  <div id="res-bar-fill" class="confidence-bar-fill fill-cancer" style="width: 90%;"></div>
+                </div>
+              </div>
+
+              <div class="clinical-notes-box">
+                <strong>Clinical Assessment:</strong>
+                <p id="res-notes" style="margin-top: 4px;">-</p>
+              </div>
+
+              <div>
+                <div class="stat-row">
+                  <span style="color: #64748b;">Risk Level:</span>
+                  <span id="res-risk" style="font-weight: 700;">-</span>
+                </div>
+                <div class="stat-row">
+                  <span style="color: #64748b;">Raw Score:</span>
+                  <span id="res-score" style="font-weight: 700; font-family: monospace;">-</span>
+                </div>
+                <div class="stat-row">
+                  <span style="color: #64748b;">Analyzed Time:</span>
+                  <span id="res-time" style="font-weight: 700;">-</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="empty-state" style="text-align: center; padding: 40px 10px; color: #94a3b8;">
+              <div style="font-size: 3rem; margin-bottom: 12px;">🩺</div>
+              <h4 style="color: #475569; margin-bottom: 6px;">Awaiting Radiograph</h4>
+              <p style="font-size: 0.85rem; line-height: 1.5;">Select an X-ray on the left and run analysis to view deep learning inference metrics.</p>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #f1f5f9; font-size: 0.75rem; color: #94a3b8; text-align: center;">
+              Powered by TensorFlow &bull; <code>lung_cancer_model_new.keras</code> &bull; Supabase Auth
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  
+<script>
+(() => {
+  // Supabase configuration
+  const SUPABASE_URL = "https://kdcrjunhhzpguqfgoixh.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_VuAQoouQgBESeQg4WmDLMg_rwBvSKOA";
+
+  // Prevent initialization if the CDN did not load
+  if (!window.supabase || !window.supabase.createClient) {
+    console.error("Supabase library failed to load.");
+    alert("Supabase library load nahi hui. Internet connection check karke page refresh karein.");
+    return;
+  }
+
+  // Create the client using one consistent variable
+  const authClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+  let currentUser = null;
+  let selectedFileObj = null;
+  let previewUrl = null;
+
+  function showError(msg) {
+    const errAlert = document.getElementById("error-alert");
+    const errText = document.getElementById("error-text");
+
+    errText.textContent = msg;
+    errAlert.style.display = "flex";
+    document.getElementById("success-alert").style.display = "none";
+  }
+
+  function showSuccess(msg) {
+    const succAlert = document.getElementById("success-alert");
+    const succText = document.getElementById("success-text");
+
+    succText.textContent = msg;
+    succAlert.style.display = "flex";
+    document.getElementById("error-alert").style.display = "none";
+  }
+
+  function clearAlerts() {
+    document.getElementById("error-alert").style.display = "none";
+    document.getElementById("success-alert").style.display = "none";
+  }
+
+  function switchTab(mode) {
+    clearAlerts();
+
+    if (mode === "login") {
+      document.getElementById("tab-login").classList.add("active");
+      document.getElementById("tab-register").classList.remove("active");
+      document.getElementById("login-form").classList.remove("hidden");
+      document.getElementById("register-form").classList.add("hidden");
+      document.getElementById("title").textContent = "Welcome Back";
+      document.getElementById("subtitle").textContent =
+        "Sign in to access patient records & chest X-ray predictions";
+    } else {
+      document.getElementById("tab-register").classList.add("active");
+      document.getElementById("tab-login").classList.remove("active");
+      document.getElementById("register-form").classList.remove("hidden");
+      document.getElementById("login-form").classList.add("hidden");
+      document.getElementById("title").textContent = "Create an Account";
+      document.getElementById("subtitle").textContent =
+        "Register a clinical account connected to Supabase";
+    }
+  }
+
+  function togglePassword(id) {
+    const input = document.getElementById(id);
+    input.type = input.type === "password" ? "text" : "password";
+  }
+
+  function renderDashboard(user) {
+    currentUser = user;
+
+    document.getElementById("main-container").classList.add("wide");
+    document.getElementById("auth-forms").classList.add("hidden");
+    document.getElementById("dashboard-view").style.display = "block";
+
+    const email = user.email || "";
+    const name =
+      (user.user_metadata && user.user_metadata.full_name) ||
+      email.split("@")[0] ||
+      "User";
+
+    document.getElementById("dash-avatar").textContent =
+      email.charAt(0).toUpperCase() || "U";
+    document.getElementById("dash-name").textContent = name;
+    document.getElementById("dash-email").textContent = email;
+  }
+
+  function renderAuth() {
+    currentUser = null;
+
+    document.getElementById("main-container").classList.remove("wide");
+    document.getElementById("auth-forms").classList.remove("hidden");
+    document.getElementById("dashboard-view").style.display = "none";
+
+    switchTab("login");
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    clearAlerts();
+
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+    const btn = document.getElementById("login-submit");
+
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div><span>Authenticating...</span>';
+
+    try {
+      const { data, error } = await authClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        if (error.message.toLowerCase().includes("email not confirmed")) {
+          throw new Error(
+            "Your email is not verified. Please check your inbox for the confirmation link."
+          );
+        }
+        throw error;
+      }
+
+      if (data.session && data.session.user) {
+        renderDashboard(data.session.user);
+        showSuccess("Signed in successfully.");
+      } else {
+        showError("Login did not create a session. Please try again.");
+      }
+    } catch (err) {
+      showError(err.message || "Login failed.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "<span>Sign In</span>";
+    }
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    clearAlerts();
+
+    const name = document.getElementById("reg-name").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const password = document.getElementById("reg-password").value;
+    const confirm = document.getElementById("reg-confirm").value;
+
+    if (password.length < 6) {
+      showError("Password must contain at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirm) {
+      showError("Passwords do not match.");
+      return;
+    }
+
+    const btn = document.getElementById("register-submit");
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div><span>Registering...</span>';
+
+    try {
+      const { data, error } = await authClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.session && data.session.user) {
+        renderDashboard(data.session.user);
+        showSuccess("Account created successfully.");
+      } else {
+        showSuccess(
+          "Registration received. Check your email for a verification link before signing in."
+        );
+        document.getElementById("register-form").reset();
+        switchTab("login");
+      }
+    } catch (err) {
+      showError(err.message || "Registration failed.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "<span>Create Account</span>";
+    }
+  }
+
+  async function handleLogout() {
+    clearAlerts();
+
+    try {
+      const { error } = await authClient.auth.signOut();
+
+      if (error) throw error;
+
+      renderAuth();
+      showSuccess("Signed out successfully.");
+    } catch (err) {
+      showError(err.message || "Sign out failed.");
+    }
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showError("Please select a valid image file.");
+      e.target.value = "";
+      return;
+    }
+
+    selectedFileObj = file;
+
+    document.getElementById("file-name-display").textContent = file.name;
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    previewUrl = URL.createObjectURL(file);
+    document.getElementById("preview-image").src = previewUrl;
+    document.getElementById("preview-box").classList.remove("hidden");
+    document.getElementById("btn-analyze").disabled = false;
+    clearAlerts();
+  }
+
+  async function runAnalysis() {
+    if (!selectedFileObj) {
+      showError("Please select a chest X-ray image first.");
+      return;
+    }
+
+    clearAlerts();
+
+    const btn = document.getElementById("btn-analyze");
+    btn.disabled = true;
+    btn.innerHTML =
+      '<div class="spinner"></div><span>Running Neural Inference...</span>';
+
+    const formData = new FormData();
+    formData.append("file", selectedFileObj);
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/predict", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Prediction server returned an error.");
+      }
+
+      if (!data.predicted_class) {
+        throw new Error("Prediction response is missing the predicted class.");
+      }
+
+      document.getElementById("empty-state").classList.add("hidden");
+      document.getElementById("result-content").classList.remove("hidden");
+
+      const badge = document.getElementById("res-badge");
+      const badgeIcon = document.getElementById("res-badge-icon");
+      const badgeText = document.getElementById("res-badge-text");
+      const barFill = document.getElementById("res-bar-fill");
+
+      if (data.predicted_class === "Cancer") {
+        badge.className = "diagnosis-badge badge-cancer";
+        badgeIcon.textContent = "⚠️";
+        badgeText.textContent = "CANCER CLASS PREDICTED";
+        barFill.className = "confidence-bar-fill fill-cancer";
+      } else {
+        badge.className = "diagnosis-badge badge-normal";
+        badgeIcon.textContent = "ℹ️";
+        badgeText.textContent = "NORMAL CLASS PREDICTED";
+        barFill.className = "confidence-bar-fill fill-normal";
+      }
+
+      const confidence = Number(data.confidence);
+      document.getElementById("res-confidence").textContent =
+        Number.isFinite(confidence) ? confidence : data.confidence;
+
+      barFill.style.width =
+        Number.isFinite(confidence)
+          ? Math.max(0, Math.min(100, confidence)) + "%"
+          : "0%";
+
+      document.getElementById("res-notes").textContent =
+        data.clinical_notes || "No additional model notes available.";
+
+      document.getElementById("res-risk").textContent =
+        data.risk_level ?? "Not provided";
+
+      document.getElementById("res-score").textContent =
+        data.raw_score ?? "Not provided";
+
+      document.getElementById("res-time").textContent =
+        data.analyzed_at || new Date().toLocaleString();
+
+      showSuccess(
+        "Model prediction completed. This experimental result is not a medical diagnosis."
+      );
+    } catch (err) {
+      showError(
+        (err.message || "Could not connect to the prediction server.") +
+        " Make sure your Flask server is running."
+      );
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "<span>Run AI Cancer Detection</span>";
+    }
+  }
+
+  // Make inline HTML handlers work
+  window.switchTab = switchTab;
+  window.togglePassword = togglePassword;
+  window.handleLogin = handleLogin;
+  window.handleRegister = handleRegister;
+  window.handleLogout = handleLogout;
+  window.handleFileSelect = handleFileSelect;
+  window.runAnalysis = runAnalysis;
+
+  // Restore an existing authentication session
+  authClient.auth.getSession().then(({ data, error }) => {
+    if (error) {
+      console.error("Session error:", error.message);
+      renderAuth();
+      return;
+    }
+
+    if (data.session && data.session.user) {
+      renderDashboard(data.session.user);
+    } else {
+      renderAuth();
+    }
+  }).catch((err) => {
+    console.error("Could not restore session:", err);
+    renderAuth();
+  });
+
+  // Keep the UI in sync with authentication changes
+  authClient.auth.onAuthStateChange((event, session) => {
+    if (session && session.user) {
+      renderDashboard(session.user);
+    } else if (event === "SIGNED_OUT") {
+      renderAuth();
+    }
+  });
+})();
+</script>
+</body>
+</html>
+
+
+
